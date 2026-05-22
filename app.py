@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import mysql.connector
 from mysql.connector import Error
 
@@ -31,6 +31,31 @@ def generar_respuesta_twiml(mensaje):
     </Response>"""
     return twiml_response, 200, {'Content-Type': 'text/xml'}
 
+# Ruta para que tu App Android registre usuarios
+@app.route('/registrar', methods=['POST'])
+def registrar():
+    datos = request.json
+    nombre = datos.get('nombre')
+    telefono = datos.get('telefono')
+    
+    if not nombre or not telefono:
+        return jsonify({"error": "Datos incompletos"}), 400
+        
+    conexion = obtener_conexion()
+    if not conexion:
+        return jsonify({"error": "Error de conexión a BD"}), 500
+    
+    try:
+        cursor = conexion.cursor()
+        cursor.execute("INSERT INTO Usuario (nombre, telefono) VALUES (%s, %s)", (nombre, telefono))
+        conexion.commit()
+        cursor.close()
+        conexion.close()
+        return jsonify({"mensaje": "Registro exitoso"}), 201
+    except Error as e:
+        return jsonify({"error": str(e)}), 400
+
+# Ruta para el bot de WhatsApp
 @app.route('/webhook', methods=['POST'])
 def webhook():
     datos = request.values
@@ -39,7 +64,7 @@ def webhook():
     
     conexion = obtener_conexion()
     if not conexion:
-        return generar_respuesta_twiml("Lo siento, estamos experimentando problemas técnicos. Intenta más tarde.")
+        return generar_respuesta_twiml("Lo siento, hay problemas técnicos. Intenta más tarde.")
         
     try:
         cursor = conexion.cursor(dictionary=True)
@@ -47,23 +72,14 @@ def webhook():
         usuario = cursor.fetchone()
         
         if not usuario:
-            # Respuesta para usuario nuevo
             respuesta_bot = ("Hola. Veo que aún no te has registrado en nuestro sistema. "
                              "Por favor, descarga nuestra aplicación móvil \"MiFarmacIA\" "
                              "para darte de alta y agendar tu cita.")
         else:
-            # Flujo para usuario registrado
             nombre = usuario['nombre']
-            
             if "cita" in mensaje_recibido or "agendar" in mensaje_recibido:
                 respuesta_bot = (f"Hola {nombre}, procedamos con la fecha de tu cita. "
-                                 "Ingresa tu fecha ideal para consultar disponibilidad "
-                                 "en el siguiente formato: dd-mm-aa")
-            elif any(char.isdigit() for char in mensaje_recibido) and "-" in mensaje_recibido:
-                respuesta_bot = ("Se ha encontrado disponibilidad en al menos 4 farmacias cerca de ti. "
-                                 "Por favor ingresa tu horario más conveniente en formato 24 horas (Ej: 16:30).")
-            elif "horario" in mensaje_recibido or "farmacia" in mensaje_recibido:
-                respuesta_bot = "Nuestros consultorios atienden de Lunes a Domingo de 08:00 a 21:00 horas."
+                                 "Ingresa tu fecha ideal en formato: dd-mm-aa")
             else:
                 respuesta_bot = (f"Hola {nombre}, bienvenido de nuevo a MiFarmacIA. "
                                  "¿Deseas agendar una cita médica o consultar sucursales?")
@@ -71,10 +87,9 @@ def webhook():
         cursor.close()
         conexion.close()
         return generar_respuesta_twiml(respuesta_bot)
-
     except Error as e:
-        print(f"Error procesando el webhook: {e}")
-        return generar_respuesta_twiml("Hubo un error al procesar tu solicitud. Por favor intenta de nuevo.")
+        print(f"Error procesando webhook: {e}")
+        return generar_respuesta_twiml("Hubo un error al procesar tu solicitud.")
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
