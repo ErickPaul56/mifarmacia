@@ -38,12 +38,12 @@ def registrar():
     nombre = datos.get('nombre')
     telefono = datos.get('telefono')
     
-    if not nombre or not telefono:
-        return jsonify({"error": "Datos incompletos"}), 400
-        
+    # Imprime en los logs para que veas qué recibe el servidor
+    print(f"Recibido registro: {nombre} - {telefono}")
+    
     conexion = obtener_conexion()
     if not conexion:
-        return jsonify({"error": "Error de conexión a BD"}), 500
+        return jsonify({"error": "No hay BD"}), 500
     
     try:
         cursor = conexion.cursor()
@@ -51,8 +51,8 @@ def registrar():
         conexion.commit()
         cursor.close()
         conexion.close()
-        return jsonify({"mensaje": "Registro exitoso"}), 201
-    except Error as e:
+        return jsonify({"mensaje": "OK"}), 201
+    except Exception as e:
         return jsonify({"error": str(e)}), 400
 
 # Ruta para el bot de WhatsApp
