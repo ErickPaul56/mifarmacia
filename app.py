@@ -43,7 +43,7 @@ def webhook():
         
     try:
         cursor = conexion.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM usuario WHERE telefono = %s", (telefono_remitente,))
+        cursor.execute("SELECT * FROM Usuario WHERE telefono = %s", (telefono_remitente,))
         usuario = cursor.fetchone()
         
         if not usuario:
