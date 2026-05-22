@@ -49,7 +49,7 @@ def webhook():
         if not usuario:
             # Respuesta para usuario nuevo
             respuesta_bot = ("Hola. Veo que aún no te has registrado en nuestro sistema. "
-                             "Por favor, descarga nuestra aplicación móvil \"Farmacia Bot\" "
+                             "Por favor, descarga nuestra aplicación móvil \"MiFarmacIA\" "
                              "para darte de alta y agendar tu cita.")
         else:
             # Flujo para usuario registrado
